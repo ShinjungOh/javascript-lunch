@@ -206,9 +206,10 @@ const Modal = ({ id, title, content, options }) => {
   $modal.addEventListener("click", handleClickBackDrop);
   return $modal;
 };
+const MODAL_ID$1 = "restaurant-detail-dialog";
 const RestaurantDetailModal = (restaurant, onDelete, onFavorite) => {
   if (!restaurant.id) return;
-  const $existingModal = $("#restaurant-detail-dialog");
+  const $existingModal = $(`#${MODAL_ID$1}`);
   if ($existingModal) {
     $existingModal.remove();
   }
@@ -237,7 +238,7 @@ const RestaurantDetailModal = (restaurant, onDelete, onFavorite) => {
   };
   const restaurantDetailContent = createDetailContent(restaurant);
   const $detailModal = Modal({
-    id: "restaurant-detail-dialog",
+    id: MODAL_ID$1,
     content: restaurantDetailContent,
     options: {
       close: {
@@ -604,10 +605,15 @@ const validateRestaurant = (newRestaurant, restaurantNames) => {
   }
   return null;
 };
+const MODAL_ID = "restaurant-add-dialog";
 const RestaurantAddModal = ({
   restaurants,
   onAddRestaurant
 }) => {
+  const $existingModal = $(`#${MODAL_ID}`);
+  if ($existingModal) {
+    $existingModal.remove();
+  }
   const resetForm = ($form) => {
     if (!$form) {
       return;
@@ -656,7 +662,7 @@ const RestaurantAddModal = ({
     }
   };
   const $modal = Modal({
-    id: "restaurant-add-dialog",
+    id: MODAL_ID,
     title: "새로운 음식점",
     content: RestaurantForm(),
     options: {
