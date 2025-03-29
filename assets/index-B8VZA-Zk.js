@@ -35,58 +35,6 @@
     fetch(link.href, fetchOpts);
   }
 })();
-const $ = (selector) => document.querySelector(selector);
-const createElement = (tagName, attributes = {}) => {
-  var _a;
-  const $el = document.createElement(tagName);
-  ((_a = attributes.class) == null ? void 0 : _a.length) && $el.classList.add(...attributes.class);
-  delete attributes.class;
-  attributes.textContent && ($el.textContent = attributes.textContent);
-  delete attributes.textContent;
-  attributes.innerHTML && ($el.innerHTML = String(attributes.innerHTML));
-  delete attributes.innerHTML;
-  Object.entries(attributes).forEach(([key, value]) => {
-    if (key.startsWith("on") && typeof value === "function") {
-      const eventName = key.slice(2).toLowerCase();
-      $el.addEventListener(eventName, value);
-      return;
-    }
-    if (value != null) {
-      $el.setAttribute(key, String(value));
-    }
-  });
-  return $el;
-};
-const createHeader = ({ title }) => {
-  const $header = $("header");
-  const $headerTitle = createElement("h1", {
-    class: ["gnb__title", "text-title"],
-    textContent: title
-  });
-  $header == null ? void 0 : $header.appendChild($headerTitle);
-  const $button = createElement("button", {
-    type: "button",
-    class: ["gnb__button"],
-    innerHTML: `<img src="images/add-button.png" alt="음식점 추가" />`
-  });
-  $header == null ? void 0 : $header.appendChild($button);
-  return $header;
-};
-const createTab = ({ title, subTitle }) => {
-  const $tabContainer = createElement("div", {
-    class: ["tab"]
-  });
-  const $mainTitle = createElement("h2", {
-    class: ["tab__title"],
-    textContent: title
-  });
-  const $subTitleEl = createElement("h2", {
-    class: ["tab__subTitle"],
-    textContent: subTitle
-  });
-  $tabContainer.append($mainTitle, $subTitleEl);
-  return $tabContainer;
-};
 const ERROR_MESSAGE = {
   restaurantNameMinLength: "이름은 최소 1글자 이상 가능합니다.",
   restaurantNameMaxLength: "이름은 최대 20글자까지 가능합니다.",
@@ -118,6 +66,28 @@ const CATEGORY_OPTIONS = [
   "기타"
 ];
 const DISTANCE_OPTIONS = ["5", "10", "15", "20", "30"];
+const $ = (selector) => document.querySelector(selector);
+const createElement = (tagName, attributes = {}) => {
+  var _a;
+  const $el = document.createElement(tagName);
+  ((_a = attributes.class) == null ? void 0 : _a.length) && $el.classList.add(...attributes.class);
+  delete attributes.class;
+  attributes.textContent && ($el.textContent = attributes.textContent);
+  delete attributes.textContent;
+  attributes.innerHTML && ($el.innerHTML = String(attributes.innerHTML));
+  delete attributes.innerHTML;
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (key.startsWith("on") && typeof value === "function") {
+      const eventName = key.slice(2).toLowerCase();
+      $el.addEventListener(eventName, value);
+      return;
+    }
+    if (value != null) {
+      $el.setAttribute(key, String(value));
+    }
+  });
+  return $el;
+};
 const RestaurantItem = ({
   restaurantItem,
   onFavorite,
@@ -533,6 +503,79 @@ const RestaurantList = ({
   };
   render();
 };
+const state = {
+  tab: "모든 음식점",
+  category: "전체",
+  sortType: "name",
+  restaurants: []
+};
+const loadRestaurantListData = () => {
+  state.restaurants = restaurantManager.getInitialData();
+};
+const updateRestaurantList = (restaurants) => {
+  setStateRestaurant(restaurants);
+  const filter = {
+    tab: state.tab,
+    category: state.category,
+    sortType: state.sortType
+  };
+  try {
+    const $el = getRestaurantListElement();
+    RestaurantList({
+      restaurants,
+      filter,
+      setRestaurant: updateRestaurantList,
+      el: $el
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
+const setStateRestaurant = (restaurants) => {
+  state.restaurants = restaurants;
+};
+const getRestaurantListElement = () => {
+  const $el = $(".restaurant-list");
+  if (!$el) {
+    throw new Error("음식점 목록을 찾을 수 없습니다.");
+  }
+  return $el;
+};
+const restaurantStore = {
+  state,
+  loadRestaurantListData,
+  update: updateRestaurantList
+};
+const createHeader = ({ title }) => {
+  const $header = $("header");
+  const $headerTitle = createElement("h1", {
+    class: ["gnb__title", "text-title"],
+    textContent: title
+  });
+  $header == null ? void 0 : $header.appendChild($headerTitle);
+  const $button = createElement("button", {
+    type: "button",
+    class: ["gnb__button"],
+    innerHTML: `<img src="images/add-button.png" alt="음식점 추가" />`
+  });
+  $header == null ? void 0 : $header.appendChild($button);
+  return $header;
+};
+const createTab = ({ title, subTitle }) => {
+  const $tabContainer = createElement("div", {
+    class: ["tab"]
+  });
+  const $mainTitle = createElement("h2", {
+    class: ["tab__title"],
+    textContent: title
+  });
+  const $subTitleEl = createElement("h2", {
+    class: ["tab__subTitle"],
+    textContent: subTitle
+  });
+  $tabContainer.append($mainTitle, $subTitleEl);
+  return $tabContainer;
+};
 const RestaurantForm = () => {
   const getCategoryOptions = () => {
     return `<option value="">선택해 주세요</option>
@@ -692,85 +735,78 @@ const RestaurantAddModal = ({
   }
   return $modal;
 };
-const state = {
-  tab: "모든 음식점",
-  category: "전체",
-  sortType: "name",
-  restaurants: []
-};
-const getRestaurantList = () => {
-  const $el = $(".restaurant-list");
-  if (!$el) {
-    throw new Error("음식점 목록을 찾을 수 없습니다.");
-  }
-  return $el;
-};
-const updateRestaurantList = (restaurants) => {
-  setStateRestaurant(restaurants);
-  const filter = {
-    tab: state.tab,
-    category: state.category,
-    sortType: state.sortType
-  };
-  try {
-    const el = getRestaurantList();
-    RestaurantList({
-      restaurants,
-      filter,
-      setRestaurant: updateRestaurantList,
-      el
+const restaurantElement = {
+  selector: {
+    $header: null,
+    $categoryFilter: null,
+    $sortingFilter: null,
+    $mainTab: null,
+    $subTab: null,
+    $restaurantFilter: null,
+    $addRestaurantModalButton: null
+  },
+  init: function() {
+    var _a;
+    this.selector.$header = createHeader({ title: "점심 뭐 먹지" });
+    this.selector.$categoryFilter = $("#category-filter");
+    this.selector.$sortingFilter = $("#sorting-filter");
+    const $tab = createTab({
+      title: "모든 음식점",
+      subTitle: "자주 가는 음식점"
     });
-  } catch (e) {
-    console.error(e);
+    const $mainTab = $tab.querySelector(".tab__title");
+    $mainTab == null ? void 0 : $mainTab.classList.add("active");
+    this.selector.$mainTab = $mainTab;
+    this.selector.$subTab = $tab.querySelector(".tab__subTitle");
+    this.selector.$restaurantFilter = $(".restaurant-filter-container");
+    this.selector.$addRestaurantModalButton = $(".gnb__button");
+    (_a = this.selector.$header) == null ? void 0 : _a.after($tab);
+  },
+  eventHandler: function() {
+    const {
+      $categoryFilter,
+      $sortingFilter,
+      $mainTab,
+      $subTab,
+      $restaurantFilter,
+      $addRestaurantModalButton
+    } = this.selector;
+    $categoryFilter == null ? void 0 : $categoryFilter.addEventListener("change", (e) => {
+      const target = e.target;
+      restaurantStore.state.category = target.value;
+      restaurantStore.update(restaurantStore.state.restaurants);
+    });
+    $sortingFilter == null ? void 0 : $sortingFilter.addEventListener("change", (e) => {
+      const target = e.target;
+      restaurantStore.state.sortType = target.value;
+      restaurantStore.update(restaurantStore.state.restaurants);
+    });
+    $mainTab == null ? void 0 : $mainTab.addEventListener("click", () => {
+      $mainTab.classList.add("active");
+      $subTab == null ? void 0 : $subTab.classList.remove("active");
+      restaurantStore.state.tab = "모든 음식점";
+      restaurantStore.update(restaurantStore.state.restaurants);
+      $restaurantFilter == null ? void 0 : $restaurantFilter.classList.remove("hidden");
+    });
+    $subTab == null ? void 0 : $subTab.addEventListener("click", () => {
+      $subTab.classList.add("active");
+      $mainTab == null ? void 0 : $mainTab.classList.remove("active");
+      restaurantStore.state.tab = "자주 가는 음식점";
+      restaurantStore.update(restaurantStore.state.restaurants);
+      $restaurantFilter == null ? void 0 : $restaurantFilter.classList.add("hidden");
+    });
+    $addRestaurantModalButton == null ? void 0 : $addRestaurantModalButton.addEventListener("click", () => {
+      RestaurantAddModal({
+        restaurants: restaurantStore.state.restaurants,
+        onAddRestaurant: restaurantStore.update
+      });
+    });
   }
 };
-const setStateRestaurant = (restaurants) => {
-  state.restaurants = restaurants;
+const runApp = () => {
+  restaurantStore.loadRestaurantListData();
+  restaurantElement.init();
+  restaurantElement.eventHandler();
+  restaurantStore.update(restaurantStore.state.restaurants);
 };
-document.addEventListener("DOMContentLoaded", () => {
-  state.restaurants = restaurantManager.getInitialData();
-  const $header = createHeader({ title: "점심 뭐 먹지" });
-  const $categoryFilter = $("#category-filter");
-  const $sortingFilter = $("#sorting-filter");
-  const tab = createTab({
-    title: "모든 음식점",
-    subTitle: "자주 가는 음식점"
-  });
-  $header == null ? void 0 : $header.after(tab);
-  const mainTab = tab.querySelector(".tab__title");
-  const subTab = tab.querySelector(".tab__subTitle");
-  const restaurantFilterContainer = $(".restaurant-filter-container");
-  mainTab == null ? void 0 : mainTab.classList.add("active");
-  $categoryFilter == null ? void 0 : $categoryFilter.addEventListener("change", (e) => {
-    const target = e.target;
-    state.category = target.value;
-    updateRestaurantList(state.restaurants);
-  });
-  $sortingFilter == null ? void 0 : $sortingFilter.addEventListener("change", (e) => {
-    const target = e.target;
-    state.sortType = target.value;
-    updateRestaurantList(state.restaurants);
-  });
-  mainTab == null ? void 0 : mainTab.addEventListener("click", () => {
-    mainTab.classList.add("active");
-    subTab == null ? void 0 : subTab.classList.remove("active");
-    state.tab = "모든 음식점";
-    updateRestaurantList(state.restaurants);
-    restaurantFilterContainer == null ? void 0 : restaurantFilterContainer.classList.remove("hidden");
-  });
-  subTab == null ? void 0 : subTab.addEventListener("click", () => {
-    subTab.classList.add("active");
-    mainTab == null ? void 0 : mainTab.classList.remove("active");
-    state.tab = "자주 가는 음식점";
-    updateRestaurantList(state.restaurants);
-    restaurantFilterContainer == null ? void 0 : restaurantFilterContainer.classList.add("hidden");
-  });
-  const addRestaurantModalButton = $(".gnb__button");
-  addRestaurantModalButton == null ? void 0 : addRestaurantModalButton.addEventListener("click", () => {
-    RestaurantAddModal({
-      restaurants: state.restaurants,
-      onAddRestaurant: updateRestaurantList
-    });
-  });
-  updateRestaurantList(state.restaurants);
-});
+document.addEventListener("DOMContentLoaded", runApp);
