@@ -35,35 +35,64 @@
     fetch(link.href, fetchOpts);
   }
 })();
+const $ = (selector) => document.querySelector(selector);
+const createElement = (tagName, attributes = {}) => {
+  var _a;
+  const $el = document.createElement(tagName);
+  ((_a = attributes.class) == null ? void 0 : _a.length) && $el.classList.add(...attributes.class);
+  delete attributes.class;
+  attributes.textContent && ($el.textContent = attributes.textContent);
+  delete attributes.textContent;
+  attributes.innerHTML && ($el.innerHTML = String(attributes.innerHTML));
+  delete attributes.innerHTML;
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (key.startsWith("on") && typeof value === "function") {
+      const eventName = key.slice(2).toLowerCase();
+      $el.addEventListener(eventName, value);
+      return;
+    }
+    if (value != null) {
+      $el.setAttribute(key, String(value));
+    }
+  });
+  return $el;
+};
 const createHeader = ({ title }) => {
-  const header = document.querySelector("header");
-  const h1 = document.createElement("h1");
-  h1.classList.add("gnb__title", "text-title");
-  h1.textContent = title;
-  header == null ? void 0 : header.appendChild(h1);
-  const button = document.createElement("button");
-  button.type = "button";
-  button.classList.add("gnb__button");
-  button.innerHTML = `<img src="images/add-button.png" alt="음식점 추가" />`;
-  header == null ? void 0 : header.appendChild(button);
-  return header;
+  const $header = $("header");
+  const $headerTitle = createElement("h1", {
+    class: ["gnb__title", "text-title"],
+    textContent: title
+  });
+  $header == null ? void 0 : $header.appendChild($headerTitle);
+  const $button = createElement("button", {
+    type: "button",
+    class: ["gnb__button"],
+    innerHTML: `<img src="images/add-button.png" alt="음식점 추가" />`
+  });
+  $header == null ? void 0 : $header.appendChild($button);
+  return $header;
 };
 const createTab = ({ title, subTitle }) => {
-  const tabContainer = document.createElement("div");
-  tabContainer.classList.add("tab");
-  const mainTitle = document.createElement("h2");
-  mainTitle.textContent = title;
-  mainTitle.classList.add("tab__title");
-  const subTitleEl = document.createElement("h2");
-  subTitleEl.textContent = subTitle;
-  subTitleEl.classList.add("tab__subTitle");
-  tabContainer.append(mainTitle, subTitleEl);
-  return tabContainer;
+  const $tabContainer = createElement("div", {
+    class: ["tab"]
+  });
+  const $mainTitle = createElement("h2", {
+    class: ["tab__title"],
+    textContent: title
+  });
+  const $subTitleEl = createElement("h2", {
+    class: ["tab__subTitle"],
+    textContent: subTitle
+  });
+  $tabContainer.append($mainTitle, $subTitleEl);
+  return $tabContainer;
 };
 const ERROR_MESSAGE = {
   restaurantNameMinLength: "이름은 최소 1글자 이상 가능합니다.",
   restaurantNameMaxLength: "이름은 최대 20글자까지 가능합니다.",
   duplicateRestaurantName: "기존에 있는 식당과 중복된 이름입니다.",
+  emptyCategory: "카테고리를 선택해주세요.",
+  emptyDistance: "거리를 선택해주세요.",
   descriptionMaxLength: "설명은 최대 500글자까지 가능합니다."
 };
 const IMAGE_SRC_BY_RESTAURANTS_CATEGORY = {
@@ -98,12 +127,13 @@ const RestaurantItem = ({
   if (!id) {
     throw new Error("id가 없습니다.");
   }
-  const li = document.createElement("li");
-  li.classList.add("restaurant");
-  li.id = id;
+  const $li = createElement("li", {
+    class: ["restaurant"],
+    id
+  });
   const mappedImage = IMAGE_SRC_BY_RESTAURANTS_CATEGORY[category];
   const favoriteIconSrc = isFavorite ? "images/favorite-icon-filled.png" : "images/favorite-icon-lined.png";
-  li.innerHTML = `
+  $li.innerHTML = `
     <div class="restaurant__category">
       <img src="${mappedImage}" alt="${category}" class="category-icon" />
     </div>
@@ -118,7 +148,7 @@ const RestaurantItem = ({
       ${description ? `<p class="restaurant__description text-body">${description}</p>` : ""}
       </div>
     `;
-  const favoriteIcon = li.querySelector(".favorite-icon");
+  const favoriteIcon = $li.querySelector(".favorite-icon");
   if (favoriteIcon instanceof HTMLImageElement) {
     favoriteIcon.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -126,40 +156,32 @@ const RestaurantItem = ({
       onFavorite(id, toggledIsFavorite);
     });
   }
-  li.addEventListener("click", () => {
+  $li.addEventListener("click", () => {
     onShowDetail(id);
   });
-  return li;
+  return $li;
 };
 const Modal = ({ id, title, content, options }) => {
-  const modal = document.createElement("dialog");
-  modal.classList.add("modal");
-  modal.id = id;
-  const cleanUp = () => {
-    closeButton == null ? void 0 : closeButton.removeEventListener("click", handleClickClose);
-    submitButton == null ? void 0 : submitButton.removeEventListener("click", handleSubmitClick);
-    modal.removeEventListener("click", handleClickBackDrop);
-  };
+  const $modal = createElement("dialog", {
+    class: ["modal"],
+    id
+  });
   const handleClickClose = () => {
     options == null ? void 0 : options.close.onClick();
-    cleanUp();
-    modal.close();
+    $modal.close();
   };
   const handleSubmitClick = (event) => {
     event.preventDefault();
     options == null ? void 0 : options.submit.onClick();
-    cleanUp();
-    modal.close();
   };
   const handleClickBackDrop = (event) => {
     const target = event.target;
     if (!target.closest(".modal-container")) {
       options == null ? void 0 : options.close.onClick();
-      cleanUp();
-      modal.close();
+      $modal.close();
     }
   };
-  modal.innerHTML = `
+  $modal.innerHTML = `
     <div class="modal-container">
       ${title ? `<h2 class="modal-title text-title">${title}</h2>` : ""}
       <div class="modal-content">
@@ -177,18 +199,18 @@ const Modal = ({ id, title, content, options }) => {
             </div>` : ""}
     </div>
   `;
-  const closeButton = modal.querySelector("#modal-close-btn");
-  const submitButton = modal.querySelector("#modal-submit-btn");
+  const closeButton = $modal.querySelector("#modal-close-btn");
+  const submitButton = $modal.querySelector("#modal-submit-btn");
   closeButton == null ? void 0 : closeButton.addEventListener("click", handleClickClose);
   submitButton == null ? void 0 : submitButton.addEventListener("click", handleSubmitClick);
-  modal.addEventListener("click", handleClickBackDrop);
-  return modal;
+  $modal.addEventListener("click", handleClickBackDrop);
+  return $modal;
 };
 const RestaurantDetailModal = (restaurant, onDelete, onFavorite) => {
   if (!restaurant.id) return;
-  const existingModal = document.getElementById("restaurant-detail-dialog");
-  if (existingModal) {
-    existingModal.remove();
+  const $existingModal = $("#restaurant-detail-dialog");
+  if ($existingModal) {
+    $existingModal.remove();
   }
   const mappedImage = IMAGE_SRC_BY_RESTAURANTS_CATEGORY[restaurant.category];
   const createDetailContent = (currentRestaurant) => {
@@ -208,43 +230,49 @@ const RestaurantDetailModal = (restaurant, onDelete, onFavorite) => {
         </div>
         <p class="detail-modal-description">${currentRestaurant.description ?? ""}</p>
         ${currentRestaurant.link ? `<p class="detail-modal-link">
-                <a href="${currentRestaurant.link}"target="_blank">${currentRestaurant.link}</a>
+                <a href="${currentRestaurant.link}" target="_blank">${currentRestaurant.link}</a>
               </p>` : ""}
       </div>
     `;
   };
   const restaurantDetailContent = createDetailContent(restaurant);
-  const detailModal = Modal({
+  const $detailModal = Modal({
     id: "restaurant-detail-dialog",
     content: restaurantDetailContent,
     options: {
       close: {
         label: "닫기",
-        onClick: () => detailModal.close()
+        onClick: () => $detailModal.close()
       },
       submit: {
         label: "삭제하기",
         onClick: () => {
+          if (!restaurant.id) return;
           onDelete(restaurant.id);
+          $detailModal.close();
         }
       }
     }
   });
-  const body = document.body;
-  if (!body) return;
-  body.append(detailModal);
-  detailModal.showModal();
-  const modalFavoriteIcon = detailModal.querySelector(".favorite-icon");
-  if (modalFavoriteIcon instanceof HTMLImageElement) {
-    modalFavoriteIcon.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!restaurant.id) return;
-      const isFavorite = modalFavoriteIcon.dataset.favorite === "true";
-      const toggledIsFavorite = !isFavorite;
-      modalFavoriteIcon.src = toggledIsFavorite ? "images/favorite-icon-filled.png" : "images/favorite-icon-lined.png";
-      modalFavoriteIcon.dataset.favorite = String(toggledIsFavorite);
-      onFavorite(restaurant.id, toggledIsFavorite);
-    });
+  const setupFavoriteIcon = () => {
+    const modalFavoriteIcon = $detailModal.querySelector(".favorite-icon");
+    if (modalFavoriteIcon instanceof HTMLImageElement) {
+      modalFavoriteIcon.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!restaurant.id) return;
+        const isFavorite = modalFavoriteIcon.dataset.favorite === "true";
+        const toggledIsFavorite = !isFavorite;
+        modalFavoriteIcon.src = toggledIsFavorite ? "images/favorite-icon-filled.png" : "images/favorite-icon-lined.png";
+        modalFavoriteIcon.dataset.favorite = String(toggledIsFavorite);
+        onFavorite(restaurant.id, toggledIsFavorite);
+      });
+    }
+  };
+  const body = $("body");
+  if (body) {
+    body.append($detailModal);
+    setupFavoriteIcon();
+    $detailModal.showModal();
   }
 };
 const restaurantsData = [
@@ -455,7 +483,6 @@ const RestaurantList = ({
   filter
 }) => {
   const render = () => {
-    el.innerHTML = "";
     const displayRestaurants = filter.tab === "자주 가는 음식점" ? restaurantManager.getFavoriteList(restaurants) : restaurantManager.getFilterAndSortList(
       restaurants,
       filter.category,
@@ -470,7 +497,7 @@ const RestaurantList = ({
       });
       fragment.appendChild(restaurantItem);
     });
-    el.appendChild(fragment);
+    el.replaceChildren(fragment);
   };
   const handleFavorite = (id, isFavorite) => {
     const targetRestaurant = restaurants.find(
@@ -505,7 +532,7 @@ const RestaurantList = ({
   };
   render();
 };
-const createForm = () => {
+const RestaurantForm = () => {
   const getCategoryOptions = () => {
     return `<option value="">선택해 주세요</option>
               ${CATEGORY_OPTIONS.map(
@@ -566,10 +593,98 @@ const validateRestaurant = (newRestaurant, restaurantNames) => {
   if (restaurantNames.includes(newRestaurant.name)) {
     return ERROR_MESSAGE.duplicateRestaurantName;
   }
+  if (newRestaurant.category === "") {
+    return ERROR_MESSAGE.emptyCategory;
+  }
+  if (newRestaurant.distance === 0) {
+    return ERROR_MESSAGE.emptyDistance;
+  }
   if (newRestaurant.description.length > VALIDATE_SETTINGS.descriptionMaxLength) {
     return ERROR_MESSAGE.descriptionMaxLength;
   }
   return null;
+};
+const RestaurantAddModal = ({
+  restaurants,
+  onAddRestaurant
+}) => {
+  const resetForm = ($form) => {
+    if (!$form) {
+      return;
+    }
+    $form.reset();
+  };
+  const submitForm = ($modal2) => {
+    const nameInput = $modal2.querySelector("#name");
+    const descriptionInput = $modal2.querySelector("#description");
+    const categoryInput = $modal2.querySelector("#category");
+    const distanceInput = $modal2.querySelector("#distance");
+    const linkInput = $modal2.querySelector("#link");
+    const restaurantsNameList = restaurants.map(
+      (restaurant) => restaurant.name
+    );
+    if (!nameInput || !descriptionInput || !categoryInput || !distanceInput || !linkInput) {
+      throw new Error("필요한 입력 요소 중 하나 이상을 찾을 수 없습니다.");
+    }
+    const newRestaurant = {
+      id: restaurantManager.getUniqueId(),
+      category: categoryInput.value,
+      name: nameInput.value,
+      distance: Number(distanceInput.value),
+      description: descriptionInput.value,
+      link: linkInput.value,
+      isFavorite: false
+    };
+    try {
+      const errorMessage = validateRestaurant(
+        newRestaurant,
+        restaurantsNameList
+      );
+      if (errorMessage) {
+        throw new Error(errorMessage);
+      }
+      const updatedRestaurants = [...restaurants, newRestaurant];
+      restaurantManager.add(newRestaurant);
+      onAddRestaurant(updatedRestaurants);
+      const $form = $modal2.querySelector("form");
+      resetForm($form);
+      $modal2.close();
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      }
+    }
+  };
+  const $modal = Modal({
+    id: "restaurant-add-dialog",
+    title: "새로운 음식점",
+    content: RestaurantForm(),
+    options: {
+      close: {
+        label: "취소하기",
+        onClick: () => {
+          const $form = $modal.querySelector("form");
+          resetForm($form);
+        }
+      },
+      submit: {
+        label: "추가하기",
+        onClick: () => {
+          submitForm($modal);
+        }
+      }
+    }
+  });
+  $modal.addEventListener("close", () => {
+    const $form = $modal.querySelector("form");
+    resetForm($form);
+  });
+  const body = $("body");
+  if (body) {
+    body.append($modal);
+    $modal.showModal();
+  }
+  return $modal;
 };
 const state = {
   tab: "모든 음식점",
@@ -578,9 +693,11 @@ const state = {
   restaurants: []
 };
 const getRestaurantList = () => {
-  const el = document.querySelector(".restaurant-list");
-  if (!el) throw new Error("음식점 목록을 찾을 수 없습니다.");
-  return el;
+  const $el = $(".restaurant-list");
+  if (!$el) {
+    throw new Error("음식점 목록을 찾을 수 없습니다.");
+  }
+  return $el;
 };
 const updateRestaurantList = (restaurants) => {
   setStateRestaurant(restaurants);
@@ -606,27 +723,24 @@ const setStateRestaurant = (restaurants) => {
 };
 document.addEventListener("DOMContentLoaded", () => {
   state.restaurants = restaurantManager.getInitialData();
-  const body = document.querySelector("body");
-  const header = createHeader({ title: "점심 뭐 먹지" });
-  const categoryFilter = body == null ? void 0 : body.querySelector("#category-filter");
-  const sortingFilter = body == null ? void 0 : body.querySelector("#sorting-filter");
+  const $header = createHeader({ title: "점심 뭐 먹지" });
+  const $categoryFilter = $("#category-filter");
+  const $sortingFilter = $("#sorting-filter");
   const tab = createTab({
     title: "모든 음식점",
     subTitle: "자주 가는 음식점"
   });
-  header == null ? void 0 : header.after(tab);
+  $header == null ? void 0 : $header.after(tab);
   const mainTab = tab.querySelector(".tab__title");
   const subTab = tab.querySelector(".tab__subTitle");
-  const restaurantFilterContainer = document.querySelector(
-    ".restaurant-filter-container"
-  );
+  const restaurantFilterContainer = $(".restaurant-filter-container");
   mainTab == null ? void 0 : mainTab.classList.add("active");
-  categoryFilter == null ? void 0 : categoryFilter.addEventListener("change", (e) => {
+  $categoryFilter == null ? void 0 : $categoryFilter.addEventListener("change", (e) => {
     const target = e.target;
     state.category = target.value;
     updateRestaurantList(state.restaurants);
   });
-  sortingFilter == null ? void 0 : sortingFilter.addEventListener("change", (e) => {
+  $sortingFilter == null ? void 0 : $sortingFilter.addEventListener("change", (e) => {
     const target = e.target;
     state.sortType = target.value;
     updateRestaurantList(state.restaurants);
@@ -645,73 +759,12 @@ document.addEventListener("DOMContentLoaded", () => {
     updateRestaurantList(state.restaurants);
     restaurantFilterContainer == null ? void 0 : restaurantFilterContainer.classList.add("hidden");
   });
-  const handleFormSubmit = () => {
-    const addRestaurantDialogElement = document.getElementById(
-      "restaurant-add-dialog"
-    );
-    if (!addRestaurantDialogElement) {
-      throw new Error("다이얼로그 요소를 찾을 수 없습니다.");
-    }
-    const nameInput = addRestaurantDialogElement.querySelector("#name");
-    const descriptionInput = addRestaurantDialogElement.querySelector(
-      "#description"
-    );
-    const categoryInput = addRestaurantDialogElement.querySelector("#category");
-    const distanceInput = addRestaurantDialogElement.querySelector("#distance");
-    const linkInput = addRestaurantDialogElement.querySelector("#link");
-    const restaurantsNameList = state.restaurants.map(
-      (restaurant) => restaurant.name
-    );
-    if (!nameInput || !descriptionInput || !categoryInput || !distanceInput || !linkInput) {
-      throw new Error("필요한 입력 요소 중 하나 이상을 찾을 수 없습니다.");
-    }
-    const newRestaurant = {
-      id: restaurantManager.getUniqueId(),
-      category: categoryInput.value,
-      name: nameInput.value,
-      distance: Number(distanceInput.value),
-      description: descriptionInput.value,
-      link: linkInput.value,
-      isFavorite: false
-    };
-    const errorMessage = validateRestaurant(newRestaurant, restaurantsNameList);
-    if (errorMessage) {
-      alert(errorMessage);
-      return;
-    }
-    const updatedRestaurants = [...state.restaurants, newRestaurant];
-    restaurantManager.add(newRestaurant);
-    updateRestaurantList(updatedRestaurants);
-    formReset();
-  };
-  const formContent = createForm();
-  const formReset = () => {
-    const addRestaurantForm = document.querySelector(
-      "#restaurant-add-dialog form"
-    );
-    addRestaurantForm == null ? void 0 : addRestaurantForm.reset();
-  };
-  const addRestaurantModal = Modal({
-    id: "restaurant-add-dialog",
-    title: "새로운 음식점",
-    content: formContent,
-    options: {
-      close: {
-        label: "취소하기",
-        onClick: () => {
-          formReset();
-        }
-      },
-      submit: {
-        label: "추가하기",
-        onClick: handleFormSubmit
-      }
-    }
-  });
-  body == null ? void 0 : body.append(addRestaurantModal);
-  const addRestaurantModalButton = header == null ? void 0 : header.querySelector(".gnb__button");
+  const addRestaurantModalButton = $(".gnb__button");
   addRestaurantModalButton == null ? void 0 : addRestaurantModalButton.addEventListener("click", () => {
-    addRestaurantModal.showModal();
+    RestaurantAddModal({
+      restaurants: state.restaurants,
+      onAddRestaurant: updateRestaurantList
+    });
   });
   updateRestaurantList(state.restaurants);
 });
